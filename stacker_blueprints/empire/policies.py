@@ -1,10 +1,8 @@
 import logging
 
 from awacs import (
-    awslambda,
     ecs,
     ec2,
-    events,
     iam,
     route53,
     kinesis,
@@ -14,7 +12,6 @@ from awacs import (
     s3,
     cloudformation,
     elasticloadbalancing as elb,
-    ecr,
 )
 from awacs.aws import (
     Statement,
@@ -47,20 +44,7 @@ def ecs_agent_policy():
                     ecs.DiscoverPollEndpoint,
                     ecs.Action("Submit*"),
                     ecs.Poll,
-                    ecs.Action("StartTelemetrySession")]),
-            Statement(
-                Effect=Allow,
-                Action=[
-                    ecr.GetAuthorizationToken,
-                    ecr.BatchCheckLayerAvailability,
-                    ecr.GetDownloadUrlForLayer,
-                    ecr.BatchGetImage,
-                ],
-                Resource=["*"],
-            ),
-        ]
-    )
-
+                    ecs.Action("StartTelemetrySession")])])
     return p
 
 
@@ -75,13 +59,7 @@ def service_role_policy():
                     Action("ec2", "Describe*"),
                     elb.DeregisterInstancesFromLoadBalancer,
                     Action("elasticloadbalancing", "Describe*"),
-                    elb.RegisterInstancesWithLoadBalancer,
-                    elb.Action("RegisterTargets"),
-                    elb.Action("DeregisterTargets"),
-                ]
-            )
-        ]
-    )
+                    elb.RegisterInstancesWithLoadBalancer])])
     return p
 
 
@@ -95,11 +73,7 @@ def empire_policy(resources):
             Statement(
                 Effect=Allow,
                 Resource=[resources['CustomResourcesQueue']],
-                Action=[
-                    sqs.ReceiveMessage,
-                    sqs.DeleteMessage,
-                    sqs.ChangeMessageVisibility
-                ]),
+                Action=[sqs.ReceiveMessage, sqs.DeleteMessage]),
             Statement(
                 Effect=Allow,
                 Resource=[resources['TemplateBucket']],
@@ -111,27 +85,6 @@ def empire_policy(resources):
                     s3.GetObjectVersion,
                     s3.GetObjectAcl,
                     s3.GetObjectVersionAcl]),
-            Statement(
-                Effect=Allow,
-                Resource=["*"],
-                Action=[
-                    awslambda.CreateFunction,
-                    awslambda.DeleteFunction,
-                    awslambda.UpdateFunctionCode,
-                    awslambda.GetFunctionConfiguration,
-                    awslambda.AddPermission,
-                    awslambda.RemovePermission]),
-            Statement(
-                Effect=Allow,
-                Resource=["*"],
-                Action=[
-                    events.PutRule,
-                    events.DeleteRule,
-                    events.DescribeRule,
-                    events.EnableRule,
-                    events.DisableRule,
-                    events.PutTargets,
-                    events.RemoveTargets]),
             Statement(
                 Effect=Allow,
                 Resource=[
@@ -163,36 +116,21 @@ def empire_policy(resources):
                 Effect=Allow,
                 # TODO: Limit to specific ELB?
                 Resource=["*"],
-                Action=[
-                    elb.Action("Describe*"),
-                    elb.AddTags,
-                    elb.CreateLoadBalancer,
-                    elb.CreateLoadBalancerListeners,
-                    elb.DescribeTags,
-                    elb.DeleteLoadBalancer,
-                    elb.ConfigureHealthCheck,
-                    elb.ModifyLoadBalancerAttributes,
-                    elb.SetLoadBalancerListenerSSLCertificate,
-                    elb.SetLoadBalancerPoliciesOfListener,
-                    elb.Action("CreateTargetGroup"),
-                    elb.Action("CreateListener"),
-                    elb.Action("DeleteListener"),
-                    elb.Action("DeleteTargetGroup"),
-                    elb.Action("ModifyTargetGroup"),
-                    elb.Action("ModifyTargetGroupAttributes"),
-                ]
-            ),
+                Action=[elb.DeleteLoadBalancer, elb.CreateLoadBalancer,
+                        elb.DescribeLoadBalancers, elb.DescribeTags,
+                        elb.ConfigureHealthCheck,
+                        elb.ModifyLoadBalancerAttributes,
+                        elb.SetLoadBalancerListenerSSLCertificate,
+                        elb.SetLoadBalancerPoliciesOfListener]),
             Statement(
                 Effect=Allow,
                 Resource=["*"],
-                Action=[ec2.DescribeSubnets, ec2.DescribeSecurityGroups]
-            ),
+                Action=[ec2.DescribeSubnets, ec2.DescribeSecurityGroups]),
             Statement(
                 Effect=Allow,
                 Action=[iam.GetServerCertificate, iam.UploadServerCertificate,
                         iam.DeleteServerCertificate, iam.PassRole],
-                Resource=["*"]
-            ),
+                Resource=["*"]),
             Statement(
                 Effect=Allow,
                 Action=[
@@ -203,28 +141,15 @@ def empire_policy(resources):
                     route53.GetChange,
                 ],
                 # TODO: Limit to specific zones
-                Resource=["*"]
-            ),
+                Resource=["*"]),
             Statement(
                 Effect=Allow,
                 Action=[
                     kinesis.DescribeStream,
                     Action(kinesis.prefix, "Get*"),
-                    Action(kinesis.prefix, "List*"),
-                    kinesis.PutRecord,
+                    Action(kinesis.prefix, "List*")
                 ],
-                Resource=["*"]
-            ),
-            Statement(
-                Effect=Allow,
-                Action=[
-                    ecr.GetAuthorizationToken,
-                    ecr.BatchCheckLayerAvailability,
-                    ecr.GetDownloadUrlForLayer,
-                    ecr.BatchGetImage,
-                ],
-                Resource=["*"],
-            ),
+                Resource=["*"]),
         ]
     )
     return p

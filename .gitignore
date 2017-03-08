@@ -62,6 +62,3 @@ vm_setup.sh
 # Ignore development conf/env files
 dev.yaml
 dev.env
-
-# Mac
-.DS_Store
