@@ -114,10 +114,10 @@ class BaseReplicationGroup(Blueprint):
             "default": "",
         },
         "SnapshotRetentionLimit": {
-            "type": CFNNumber,
+            "type": CFNString,
             "description": "The number of daily snapshots to retain. Only "
                            "valid for clusters with the redis Engine.",
-            "default": "0",
+            "default": "",
         },
         "SnapshotWindow": {
             "type": CFNString,
@@ -213,6 +213,9 @@ class BaseReplicationGroup(Blueprint):
         t.add_condition(
             "DefinedSnapshotWindow",
             Not(Equals(Ref("SnapshotWindow"), "")))
+        t.add_condition(
+            "DefinedSnapshotRetentionLimit",
+            Not(Equals(Ref("SnapshotRetentionLimit"), "")))
 
         # DNS Conditions
         t.add_condition(
@@ -289,7 +292,9 @@ class BaseReplicationGroup(Blueprint):
                 SnapshotArns=If("DefinedSnapshotArns",
                                 Ref("SnapshotArns"),
                                 Ref("AWS::NoValue")),
-                SnapshotRetentionLimit=Ref("SnapshotRetentionLimit"),
+                SnapshotRetentionLimit=If("DefinedSnapshotRetentionLimit",
+                                          Ref("SnapshotRetentionLimit"),
+                                          Ref("AWS::NoValue")),
                 SnapshotWindow=If("DefinedSnapshotWindow",
                                   Ref("SnapshotWindow"),
                                   Ref("AWS::NoValue")),
